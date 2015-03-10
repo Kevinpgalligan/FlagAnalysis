@@ -1,6 +1,5 @@
 # FlagAnalysis
-Image processing the flags of the world.
-Currently using the Pillow image processing library.
+Analysing national flags using Pillow and matplotlib.
 
 --------------
 
