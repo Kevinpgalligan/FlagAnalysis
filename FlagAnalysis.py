@@ -37,7 +37,7 @@ def create_avg_flag (images):
             
             # Adjust average value of pixel. It would be less horribly
             # inefficient to iterate through co-ordinates instead
-            # of images, but if it ain't broke don't fix it.
+            # of images.
             avg_pixels[x, y] = (
                                 (avg_pixels[x, y][0]*(n+1) + img[k][0]) // (n+2),
                                 (avg_pixels[x, y][1]*(n+1) + img[k][1]) // (n+2),
