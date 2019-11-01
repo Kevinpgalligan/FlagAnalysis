@@ -1,6 +1,14 @@
 # FlagAnalysis
-Colour analysis of national flags.
 
-There are two interesting images in the `results/` folder:
-1. An "average" flag made by merging all national flags (i.e. at co-ordinate (0, 0) in the average flag, the value of the pixel is the average value of all pixels at (0, 0) in the national flags).
-2. A bar chart showing the percentage use of each colour on national flags. Red appears to have the strongest showing.
+### Questions
+* What happens when you average the pixels of all of the national flags in the world?
+* What are the most common colours in national flags?
+
+### Answers
+Average flag:
+
+![average flag](https://raw.githubusercontent.com/Kevinpgalligan/FlagAnalysis/master/results/average_flag.jpg)
+
+Colour distribution:
+
+TODO

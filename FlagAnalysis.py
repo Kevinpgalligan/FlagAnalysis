@@ -7,8 +7,42 @@ from PIL import Image
 from matplotlib import pyplot as plt
 import os
 import sys
+import math
+import collections
+import numpy as np
+import progressbar as progressbar
 
-def create_avg_flag (images):
+# As per: https://htmlcolorcodes.com/
+# Since it looks ugly if we count the frequency
+# of every RGB combination, we instead "round"
+# the colours to the nearest of these common
+# colours.
+COMMON_COLOURS = np.array([
+    [255, 255, 255], # white
+    [192, 192, 192], # silver
+    [128, 128, 128], # gray
+    [  0,   0,   0], # black
+    [255,   0,   0], # red
+    [128,   0,   0], # maroon
+    [255, 255,   0], # yellow
+    [128, 128,   0], # olive
+    [  0, 255,   0], # lime
+    [  0, 128,   0], # green
+    [  0, 255, 255], # aqua
+    [  0, 128, 128], # teal
+    [  0,   0, 255], # blue
+    [  0,   0, 128], # navy
+    [255,   0, 255], # fuchsia
+    [128,   0, 128]  # purple
+])
+COMMON_COLOURS_MAP = [tuple(colour) for colour in COMMON_COLOURS]
+def euclidean_dist(rgb1, rgb2):
+    return math.sqrt(sum((rgb1[i] - rgb2[i])**2 for i in range(3)))
+
+def nearest_common_colour(rgb):
+    return min(COMMON_COLOURS, key=lambda c: euclidean_dist(rgb, c))
+
+def create_avg_flag(images):
     """
     Averages a list of images to form a new image, saves the result.
     Note: images must have the same dimensions.
@@ -46,38 +80,26 @@ def create_avg_flag (images):
                                
     avg.save('results/average_flag.jpg')
     
-def normalise_rgb(rgb):
-    """Puts values of rgb tuples in 0-1 range."""
-    s = rgb[0] + rgb[1] + rgb[2]
-    if s:
-        r = rgb[0] / s
-        g = rgb[1] / s
-        b = rgb[2] / s
-    else:
-        r, g, b = 0, 0, 0
-    return (r, g, b)
+def plot(images):
+    """Saves bar chart of pixel colour frequency."""
+    colour_count = collections.defaultdict(int)
 
-def plot (images):
-    """Saves bar chart of pixel colour frequency, small values are cut off."""
-    pixel_count = {}
+    for img in progressbar.progressbar(images):
+        pixels = np.array(img.convert('RGB').getdata())
+        # Messy code that gives a matrix D of size MxN, where
+        # Dij is the Euclidean distance between the ith pixel
+        # in the image and the jth common colour.
+        diffs = np.concatenate(
+                [np.sqrt(np.sum(np.square(pixels - colour), axis=1))
+                 for colour in COMMON_COLOURS]) \
+            .reshape((len(COMMON_COLOURS), len(pixels))).T
+        for i in np.argmin(diffs, axis=1):
+            colour_count[COMMON_COLOURS_MAP[i]] += 1
 
-    # Count pixels.
-    for n, img in enumerate(images):
-        print("#{0}".format(n+1))
-        for px in img.convert('RGB').getdata():
-            if pixel_count.get(px):
-                pixel_count[px] += 1
-            else:
-                pixel_count[px] = 1
-    
-    pairs = sorted([pair for pair in pixel_count.items()],
-                            key=lambda pair: pair[0][0])
-    colours = [normalise_rgb(pair[0]) for pair in pairs if pair[1] > 2000]
-    frequency = [pair[1] for pair in pairs if pair[1] > 2000]
-    
-    plt.bar(range(len(frequency)), frequency,
-            color=colours, edgecolor=colours
-            )
+    colours = [(rgb[0]/255, rgb[1]/255, rgb[2]/255) for rgb, _ in colour_count.items()]
+    counts = [f for _, f in colour_count.items()]
+
+    plt.bar(range(len(counts)), counts, color=colours, edgecolor=(0, 0, 0))
     plt.ylabel('Frequency')
     plt.xlabel('Colour')
     plt.title('Pixel Colour Frequency', y=1.02)
@@ -93,11 +115,6 @@ def plot (images):
     plt.savefig('results/barchart.png')
     
     plt.clf()
-    
-    # plt.pie(frequency, colors=colours)
-    # plt.title('Pixel Colour Frequency')
-    # plt.savefig('results/piechart.png')
-    
 
 def main():
     args = sys.argv[1:]
@@ -105,15 +122,14 @@ def main():
         print("usage: [--chart] [--avg]")
         sys.exit(1)
     
-    names = [('flags/' + name) for name in os.listdir('flags')]
+    names = sorted([('flags/' + name) for name in os.listdir('flags')])
     images = [Image.open(name) for name in names]
-    
+
     if '--chart' in args:
         plot(images)
-    
+
     if '--avg' in args:
         create_avg_flag(images)
-    
 
 if __name__ == '__main__':
 	main()
